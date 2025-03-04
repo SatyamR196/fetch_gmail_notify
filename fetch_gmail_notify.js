@@ -31,10 +31,14 @@ async function authenticate() {
         refresh_token: process.env.REFRESH_TOKEN,
         scope: process.env.SCOPE,
         token_type: process.env.TOKEN_TYPE,
-        refresh_token_expires_in: process.env.REFRESH_TOKEN_EXPIRES_IN,
-        expiry_date: process.env.EXPIRY_DATE
+        refresh_token_expires_in: Number(process.env.REFRESH_TOKEN_EXPIRES_IN),
+        expiry_date: Number(process.env.EXPIRY_DATE)
     };
-    
+    console.log("🔍 Checking environment variables...");
+    console.log("ACCESS_TOKEN:", process.env.ACCESS_TOKEN ? "✅ Loaded" : "❌ Missing");
+    console.log("REFRESH_TOKEN:", process.env.REFRESH_TOKEN ? "✅ Loaded" : "❌ Missing");
+    console.log("EXPIRY_DATE:", process.env.EXPIRY_DATE ? `✅ Loaded (${process.env.EXPIRY_DATE})` : "❌ Missing");
+
     const oAuth2Client = new google.auth.OAuth2(
         credentials.client_id,
         credentials.client_secret,
