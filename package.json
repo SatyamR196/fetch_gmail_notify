@@ -7,7 +7,7 @@
     "open": "^10.1.0"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node fetch_gmail_notify.js"
   },
   "type": "module"
 }
