@@ -4,6 +4,7 @@
     "dotenv": "^16.4.7",
     "google-auth-library": "^9.15.1",
     "googleapis": "^146.0.0",
+    "he": "^1.2.0",
     "open": "^10.1.0"
   },
   "scripts": {

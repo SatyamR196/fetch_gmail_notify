@@ -1,12 +1,3 @@
-// require('dotenv').config();
-// // const fs = require('fs');
-// // const path = require('path');
-// const readline = require('readline');
-// const { google } = require('googleapis');
-// const axios = require('axios');
-// // const open = require('open');
-// import open from 'open';
-
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
@@ -14,11 +5,12 @@ import { google } from 'googleapis';
 import axios from 'axios';
 import open from 'open';
 import dotenv from 'dotenv';
+import he from 'he';
 
 dotenv.config(); // Load environment variables
 
-
 const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+let prevEmails = new Set();
 
 async function authenticate() {
     const credentials = {
@@ -34,10 +26,6 @@ async function authenticate() {
         refresh_token_expires_in: Number(process.env.REFRESH_TOKEN_EXPIRES_IN),
         expiry_date: Number(process.env.EXPIRY_DATE)
     };
-    console.log("🔍 Checking environment variables...");
-    console.log("ACCESS_TOKEN:", process.env.ACCESS_TOKEN ? "✅ Loaded" : "❌ Missing");
-    console.log("REFRESH_TOKEN:", process.env.REFRESH_TOKEN ? "✅ Loaded" : "❌ Missing");
-    console.log("EXPIRY_DATE:", process.env.EXPIRY_DATE ? `✅ Loaded (${process.env.EXPIRY_DATE})` : "❌ Missing");
 
     const oAuth2Client = new google.auth.OAuth2(
         credentials.client_id,
@@ -71,53 +59,61 @@ function getNewToken(oAuth2Client) {
     });
 }
 
-async function fetchLatestEmail(auth) {
+async function fetchLatestEmails(auth) {
     const gmail = google.gmail({ version: 'v1', auth });
+    const res = await gmail.users.messages.list({ userId: 'me', maxResults: 20 });
+    const messages = res.data.messages || [];
 
-    const res = await gmail.users.messages.list({ userId: 'me', maxResults: 1 });
-    const messages = res.data.messages;
-
-    if (!messages || messages.length === 0) {
+    if (messages.length === 0) {
         console.log("No new emails.");
-        return null;
+        return [];
     }
 
-    const email = await gmail.users.messages.get({ userId: 'me', id: messages[0].id });
-    const headers = email.data.payload.headers;
-    const subject = headers.find(header => header.name === "Subject")?.value || "No Subject";
-    const snippet = email.data.snippet;
+    const emailData = [];
+    for (const msg of messages) {
+        const email = await gmail.users.messages.get({ userId: 'me', id: msg.id });
+        const headers = email.data.payload.headers;
+        const subject = headers.find(header => header.name === "Subject")?.value || "No Subject";
+        const snippet = email.data.snippet;
 
-    console.log("📧 New Email:", subject);
-    return { subject, snippet };
+        emailData.push({ id: msg.id, subject, snippet });
+    }
+    return emailData;
 }
 
-let prev_msg = "" ;
-
-async function sendNotification(subject, snippet) {
-    try {
-        const message = `📩 *New Email Received!*\n\n📌 **Subject:** ${subject}\n🔍 **Preview:** ${snippet}`;
-        if(message == prev_msg) {
-            console.log("📲 Notification already sent!");
-            return;
+async function sendNotification(newEmails) {
+    for (const email of newEmails) {
+        try {
+            let date = new Date();
+            let time = date.toLocaleDateString() + " " + date.toLocaleTimeString() ;
+            let message = `📩 **Subject:** ${email.subject}\n\n🔍 **Preview:** ${email.snippet} \n\n⌚ **Time:** ${time}`;
+            message = he.decode(message);
+            await axios.post(`https://ntfy.sh/${process.env.NTFY_TOPIC}`, message, {
+                headers: { 'Content-Type': 'text/plain' }
+            });
+            console.log("📲 Notification sent successfully for:", email.subject);
+        } catch (error) {
+            console.error("❌ Error sending notification:", error);
         }
-        await axios.post(`https://ntfy.sh/${process.env.NTFY_TOPIC}`, message, {
-            headers: { 'Content-Type': 'text/plain' }
-        });
-
-        console.log("📲 Notification sent successfully!");
-        prev_msg = message;
-    } catch (error) {
-        console.error("❌ Error sending notification:", error);
     }
 }
 
 async function main() {
     try {
         const auth = await authenticate();
-        const emailData = await fetchLatestEmail(auth);
-        if (emailData) {
-            await sendNotification(emailData.subject, emailData.snippet);
+        const latestEmails = await fetchLatestEmails(auth);
+
+        const newEmails = latestEmails.filter(email => !prevEmails.has(email.id));
+        if (newEmails.length > 0) {
+            await sendNotification(newEmails);
         }
+        if (newEmails.length == 0) {
+            let date = new Date();
+            let time = date.toLocaleDateString() + " " + date.toLocaleTimeString() ;
+            console.log(`No new emails till ${time}`);
+        }
+
+        prevEmails = new Set(latestEmails.map(email => email.id));
     } catch (error) {
         console.error("❌ Error:", error);
     }
