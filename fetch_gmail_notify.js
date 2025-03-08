@@ -85,7 +85,11 @@ async function sendNotification(newEmails) {
     for (const email of newEmails) {
         try {
             let date = new Date();
-            let time = date.toLocaleDateString() + " " + date.toLocaleTimeString() ;
+            let time = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                dateStyle: 'short',
+                timeStyle: 'medium' // Use 'long' to include seconds
+            }).format(date);
             let message = `📩 **Subject:** ${email.subject}\n\n🔍 **Preview:** ${email.snippet} \n\n⌚ **Time:** ${time}`;
             message = he.decode(message);
             await axios.post(`https://ntfy.sh/${process.env.NTFY_TOPIC}`, message, {
@@ -109,7 +113,11 @@ async function main() {
         }
         if (newEmails.length == 0) {
             let date = new Date();
-            let time = date.toLocaleDateString() + " " + date.toLocaleTimeString() ;
+            let time = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                dateStyle: 'short',
+                timeStyle: 'medium' // Use 'long' to include seconds
+            }).format(date);
             console.log(`No new emails till ${time}`);
         }
 
