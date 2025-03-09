@@ -95,6 +95,7 @@ async function sendNotification(newEmails) {
             await axios.post(`https://ntfy.sh/${process.env.NTFY_TOPIC}`, message, {
                 headers: { 'Content-Type': 'text/plain' }
             });
+            await new Promise(resolve => setTimeout(resolve, 500));
             console.log("📲 Notification sent successfully for:", email.subject);
         } catch (error) {
             console.error("❌ Error sending notification:", error);
