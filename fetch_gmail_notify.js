@@ -82,6 +82,7 @@ async function fetchLatestEmails(auth) {
 }
 
 async function sendNotification(newEmails) {
+    newEmails.reverse();
     for (const email of newEmails) {
         try {
             let date = new Date();
