@@ -2,7 +2,7 @@ import { MongoClient } from "mongodb";
 import dotenv from 'dotenv';
 
 dotenv.config(); // Load environment variables
-const uri = "mongodb+srv://satyamR196:4WmWUuBDc9HIO8JW@fetch-gmail.q6eos.mongodb.net/?retryWrites=true&w=majority&appName=Fetch-gmail";
+const uri = `mongodb+srv://satyamR196:${process.env.mongo_pass}@fetch-gmail.q6eos.mongodb.net/?retryWrites=true&w=majority&appName=Fetch-gmail`;
 const client = new MongoClient(uri);
 
 await client.connect();
