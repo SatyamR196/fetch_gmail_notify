@@ -11,7 +11,7 @@ import { getTokenFromDB, saveTokenToDB, insertD, readD } from "./db.js";
 
 dotenv.config(); // Load environment variables
 const uri =
-  "mongodb+srv://satyamR196:4WmWUuBDc9HIO8JW@fetch-gmail.q6eos.mongodb.net/?retryWrites=true&w=majority&appName=Fetch-gmail";
+  `mongodb+srv://satyamR196:${process.env.mongo_pass}@fetch-gmail.q6eos.mongodb.net/?retryWrites=true&w=majority&appName=Fetch-gmail`;
 const client = new MongoClient(uri);
 
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
