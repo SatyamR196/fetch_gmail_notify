@@ -264,7 +264,7 @@ async function main() {
   }
 }
 
-// setInterval(main, 300000);
+setInterval(main, 300000);
 // setInterval(main, 15000);
-await main();
+// await main();
 
