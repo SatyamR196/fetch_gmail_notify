@@ -10,101 +10,98 @@ import { MongoClient } from "mongodb";
 import { getTokenFromDB, saveTokenToDB, insertD, readD } from "./db.js";
 
 dotenv.config(); // Load environment variables
-const uri =
-  `mongodb+srv://satyamR196:${process.env.mongo_pass}@fetch-gmail.q6eos.mongodb.net/?retryWrites=true&w=majority&appName=Fetch-gmail`;
-const client = new MongoClient(uri);
 
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 
 let prevEmails = await readD();
-// console.log("PREV MAILS",prevEmails);
+console.log("PREV MAILS",prevEmails);
 
-async function authenticate() {
-  const credentials = {
-    client_id: process.env.CLIENT_ID,
-    client_secret: process.env.CLIENT_SECRET,
-    redirect_uri: process.env.REDIRECT_URI,
-  };
+// async function authenticate() {
+//   const credentials = {
+//     client_id: process.env.CLIENT_ID,
+//     client_secret: process.env.CLIENT_SECRET,
+//     redirect_uri: process.env.REDIRECT_URI,
+//   };
 
-  const oAuth2Client = new google.auth.OAuth2(
-    credentials.client_id,
-    credentials.client_secret,
-    credentials.redirect_uri
-  );
+//   const oAuth2Client = new google.auth.OAuth2(
+//     credentials.client_id,
+//     credentials.client_secret,
+//     credentials.redirect_uri
+//   );
 
-  // const TOKEN = {
-  //     access_token: process.env.ACCESS_TOKEN,
-  //     refresh_token: process.env.REFRESH_TOKEN,
-  //     scope: process.env.SCOPE,
-  //     token_type: process.env.TOKEN_TYPE,
-  //     refresh_token_expires_in: Number(process.env.REFRESH_TOKEN_EXPIRES_IN),
-  //     expiry_date: Number(process.env.EXPIRY_DATE)
-  // };
+//   // const TOKEN = {
+//   //     access_token: process.env.ACCESS_TOKEN,
+//   //     refresh_token: process.env.REFRESH_TOKEN,
+//   //     scope: process.env.SCOPE,
+//   //     token_type: process.env.TOKEN_TYPE,
+//   //     refresh_token_expires_in: Number(process.env.REFRESH_TOKEN_EXPIRES_IN),
+//   //     expiry_date: Number(process.env.EXPIRY_DATE)
+//   // };
 
-  // if (TOKEN) {
-  //     oAuth2Client.setCredentials(TOKEN);
-  //     return oAuth2Client;
-  // }
+//   // if (TOKEN) {
+//   //     oAuth2Client.setCredentials(TOKEN);
+//   //     return oAuth2Client;
+//   // }
 
-  // return getNewToken(oAuth2Client);
+//   // return getNewToken(oAuth2Client);
 
-  let token = await getTokenFromDB();
+//   let token = await getTokenFromDB();
 
-  if (!token || !token.refresh_token) {
-    return getNewToken(oAuth2Client); // If no token, get a new one
-  }
+//   if (!token || !token.refresh_token) {
+//     return getNewToken(oAuth2Client); // If no token, get a new one
+//   }
 
-  oAuth2Client.setCredentials(token);
+//   oAuth2Client.setCredentials(token);
 
-  // Refresh access token if expired
-  // ✅ Use isTokenExpiring() to check if token is about to expire
-  if (oAuth2Client.isTokenExpiring()) {
-    try {
-      const { credentials } = await oAuth2Client.refreshAccessToken();
-      oAuth2Client.setCredentials(credentials);
+//   // Refresh access token if expired
+//   // ✅ Use isTokenExpiring() to check if token is about to expire
+//   if (oAuth2Client.isTokenExpiring()) {
+//     try {
+//       const { credentials } = await oAuth2Client.refreshAccessToken();
+//       oAuth2Client.setCredentials(credentials);
 
-      await saveTokenToDB({
-        access_token: credentials.access_token,
-        refresh_token: token.refresh_token, // Keep the same refresh token
-        expiry_date: credentials.expiry_date,
-      });
-
-      console.log("✅ Access token refreshed and saved to MongoDB!");
-    } catch (error) {
-      console.error("❌ Failed to refresh token:", error);
-      return getNewToken(oAuth2Client);
-    }
-  }
-
-  return oAuth2Client;
-}
-
-// function getNewToken(oAuth2Client) {
-//   return new Promise((resolve, reject) => {
-//     const authUrl = oAuth2Client.generateAuthUrl({
-//       access_type: "offline",
-//       scope: SCOPES,
-//     });
-//     console.log("Authorize this app by visiting:", authUrl);
-//     open(authUrl);
-
-//     const rl = readline.createInterface({
-//       input: process.stdin,
-//       output: process.stdout,
-//     });
-//     rl.question("Enter the code from the page: ", (code) => {
-//       rl.close();
-//       oAuth2Client.getToken(code, (err, token) => {
-//         if (err) return reject("Error retrieving access token", err);
-//         console.log(
-//           "Token generated. Store this securely:",
-//           JSON.stringify(token)
-//         );
-//         resolve(oAuth2Client);
+//       await saveTokenToDB({
+//         access_token: credentials.access_token,
+//         refresh_token: token.refresh_token, // Keep the same refresh token
+//         expiry_date: credentials.expiry_date,
 //       });
-//     });
-//   });
+
+//       console.log("✅ Access token refreshed and saved to MongoDB!");
+//     } catch (error) {
+//       console.error("❌ Failed to refresh token:", error);
+//       return getNewToken(oAuth2Client);
+//     }
+//   }
+
+//   return oAuth2Client;
 // }
+
+// // function getNewToken(oAuth2Client) {
+// //   return new Promise((resolve, reject) => {
+// //     const authUrl = oAuth2Client.generateAuthUrl({
+// //       access_type: "offline",
+// //       scope: SCOPES,
+// //     });
+// //     console.log("Authorize this app by visiting:", authUrl);
+// //     open(authUrl);
+
+// //     const rl = readline.createInterface({
+// //       input: process.stdin,
+// //       output: process.stdout,
+// //     });
+// //     rl.question("Enter the code from the page: ", (code) => {
+// //       rl.close();
+// //       oAuth2Client.getToken(code, (err, token) => {
+// //         if (err) return reject("Error retrieving access token", err);
+// //         console.log(
+// //           "Token generated. Store this securely:",
+// //           JSON.stringify(token)
+// //         );
+// //         resolve(oAuth2Client);
+// //       });
+// //     });
+// //   });
+// // }
 
 async function getNewToken(oAuth2Client) {
     const authUrl = oAuth2Client.generateAuthUrl({
@@ -138,6 +135,60 @@ async function getNewToken(oAuth2Client) {
             console.error("❌ Error retrieving access token:", error);
         }
     });
+}
+
+async function authenticate() {
+  const credentials = {
+    client_id: process.env.CLIENT_ID,
+    client_secret: process.env.CLIENT_SECRET,
+    redirect_uri: process.env.REDIRECT_URI,
+  };
+
+  const oAuth2Client = new google.auth.OAuth2(
+    credentials.client_id,
+    credentials.client_secret,
+    credentials.redirect_uri
+  );
+
+  let token = await getTokenFromDB();
+
+  // If no token in DB, request new one
+  if (!token || !token.refresh_token) {
+    return await getNewToken(oAuth2Client);
+  }
+
+  oAuth2Client.setCredentials(token);
+
+  const now = Date.now();
+  const fiveMinutes = 5 * 60 * 1000;
+
+  // Refresh token if about to expire (within next 5 mins)
+  console.log("Token expiry date:", new Date(token.expiry_date).toLocaleString());
+  console.log("now:", new Date(now).toLocaleString());
+  if (token.expiry_date && now >= token.expiry_date - fiveMinutes) {
+    try {
+      // This will use refresh_token to update access_token
+      await oAuth2Client.getAccessToken();
+
+      const newCreds = oAuth2Client.credentials;
+
+      // Save updated token to DB
+      await saveTokenToDB({
+        access_token: newCreds.access_token,
+        refresh_token: token.refresh_token, // reuse same refresh token
+        expiry_date: newCreds.expiry_date,
+      });
+
+      console.log("✅ Access token refreshed and saved to MongoDB!");
+      console.log("🔐 Prev expiry date:", new Date(token.expiry_date).toLocaleString());
+      console.log("🔐 Token will expire at:", new Date(newCreds.expiry_date).toLocaleString());
+    } catch (error) {
+      console.error("❌ Failed to refresh token:", error);
+      return await getNewToken(oAuth2Client);
+    }
+  }
+
+  return oAuth2Client;
 }
 
 async function fetchLatestEmails(auth) {
@@ -213,7 +264,7 @@ async function main() {
   }
 }
 
-setInterval(main, 300000);
+// setInterval(main, 300000);
 // setInterval(main, 15000);
-// await main();
+await main();
 
