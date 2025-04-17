@@ -242,10 +242,12 @@ async function main() {
   try {
     const auth = await authenticate();
     const latestEmails = await fetchLatestEmails(auth);
-
+    if(latestEmails.length == 0) return;
     const newEmails = latestEmails.filter((email) => !prevEmails.has(email.id));
     if (newEmails.length > 0) {
       await sendNotification(newEmails);
+      await insertD(latestEmails);
+      prevEmails = new Set(latestEmails.map((email) => email.id));
     }
     if (newEmails.length == 0) {
       let date = new Date();
@@ -257,8 +259,6 @@ async function main() {
       console.log(`No new emails till ${time}`);
     }
 
-    await insertD(latestEmails);
-    prevEmails = new Set(latestEmails.map((email) => email.id));
   } catch (error) {
     console.error("❌ Error:", error);
   }
